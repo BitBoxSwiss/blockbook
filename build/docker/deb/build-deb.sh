@@ -38,3 +38,6 @@ fi
 # copy packages
 mv build/pkg-defs/*.deb /out
 chown $PACKAGER /out/*.deb
+
+# append git commit info to the filenames
+for f in /out/*.deb; do mv "$f" "${f%.deb}--$(cd /src && git describe --tags --dirty).deb"; done
