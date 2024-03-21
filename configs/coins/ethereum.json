@@ -21,7 +21,7 @@
     "backend": {
         "package_name": "backend-ethereum",
         "package_revision": "satoshilabs-1",
-        "system_user": "ethereum",
+        "system_user": "blockbook",
         "version": "2.58.2",
         "binary_url": "https://github.com/ledgerwatch/erigon/releases/download/v2.58.2/erigon_2.58.2_linux_amd64.tar.gz",
         "verification_type": "sha256",
@@ -46,7 +46,7 @@
     },
     "blockbook": {
         "package_name": "blockbook-ethereum",
-        "system_user": "blockbook-ethereum",
+        "system_user": "blockbook",
         "internal_binding_template": ":{{.Ports.BlockbookInternal}}",
         "public_binding_template": ":{{.Ports.BlockbookPublic}}",
         "explorer_url": "",
@@ -61,9 +61,6 @@
                 "address_aliases": true,
                 "mempoolTxTimeoutHours": 48,
                 "queryBackendOnMempoolResync": false,
-                "fiat_rates": "coingecko",
-                "fiat_rates_vs_currencies": "AED,ARS,AUD,BDT,BHD,BMD,BRL,CAD,CHF,CLP,CNY,CZK,DKK,EUR,GBP,HKD,HUF,IDR,ILS,INR,JPY,KRW,KWD,LKR,MMK,MXN,MYR,NGN,NOK,NZD,PHP,PKR,PLN,RUB,SAR,SEK,SGD,THB,TRY,TWD,UAH,USD,VEF,VND,ZAR,BTC,ETH",
-                "fiat_rates_params": "{\"coin\": \"ethereum\",\"platformIdentifier\": \"ethereum\",\"platformVsCurrency\": \"eth\",\"periodSeconds\": 900}",
                 "fourByteSignatures": "https://www.4byte.directory/api/v1/signatures/"
             }
         }
