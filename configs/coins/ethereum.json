@@ -57,7 +57,7 @@
             "mempool_sub_workers": 2,
             "block_addresses_to_keep": 300,
             "additional_params": {
-                "consensusNodeVersion": "http://localhost:7536/eth/v1/node/version",
+                "consensusNodeVersion": "http://127.0.0.1:7536/eth/v1/node/version",
                 "address_aliases": true,
                 "eip1559Fees": true,
                 "mempoolTxTimeoutHours": 48,
