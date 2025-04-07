@@ -1,6 +1,10 @@
 package server
 
-import "encoding/json"
+import (
+	"encoding/json"
+
+	"github.com/trezor/blockbook/api"
+)
 
 type WsReq struct {
 	ID     string          `json:"id"`
@@ -36,6 +40,7 @@ type WsBackendInfo struct {
 type WsInfoRes struct {
 	Name       string        `json:"name"`
 	Shortcut   string        `json:"shortcut"`
+	Network    string        `json:"network"`
 	Decimals   int           `json:"decimals"`
 	Version    string        `json:"version"`
 	BestHeight int           `json:"bestHeight"`
@@ -105,9 +110,10 @@ type WsEstimateFeeReq struct {
 }
 
 type WsEstimateFeeRes struct {
-	FeePerTx   string `json:"feePerTx,omitempty"`
-	FeePerUnit string `json:"feePerUnit,omitempty"`
-	FeeLimit   string `json:"feeLimit,omitempty"`
+	FeePerTx   string           `json:"feePerTx,omitempty"`
+	FeePerUnit string           `json:"feePerUnit,omitempty"`
+	FeeLimit   string           `json:"feeLimit,omitempty"`
+	Eip1559    *api.Eip1559Fees `json:"eip1559,omitempty"`
 }
 
 type WsSendTransactionReq struct {
@@ -136,4 +142,14 @@ type WsFiatRatesForTimestampsReq struct {
 type WsFiatRatesTickersListReq struct {
 	Timestamp int64  `json:"timestamp,omitempty"`
 	Token     string `json:"token,omitempty"`
+}
+
+type WsRpcCallReq struct {
+	From string `json:"from,omitempty"`
+	To   string `json:"to"`
+	Data string `json:"data"`
+}
+
+type WsRpcCallRes struct {
+	Data string `json:"data"`
 }

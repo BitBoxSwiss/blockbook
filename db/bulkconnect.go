@@ -438,19 +438,18 @@ func (b *BulkConnect) Close() error {
 			return err
 		}
 	}
-	bt, err := b.d.loadBlockTimes()
-	if err != nil {
-		return err
-	}
-	avg := b.d.is.SetBlockTimes(bt)
-	if b.d.metrics != nil {
-		b.d.metrics.AvgBlockPeriod.Set(float64(avg))
-	}
-
 	if err := b.d.SetInconsistentState(false); err != nil {
 		return err
 	}
 	glog.Info("rocksdb: bulk connect closed, db set to open state")
+
+	// set block times asynchronously (if not in unit test), it slows server startup for chains with large number of blocks
+	if b.d.is.Coin == "coin-unittest" {
+		b.d.setBlockTimes()
+	} else {
+		go b.d.setBlockTimes()
+	}
+
 	b.d = nil
 	return nil
 }

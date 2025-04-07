@@ -23,15 +23,15 @@
         "package_name": "backend-ethereum-testnet-sepolia-consensus",
         "package_revision": "satoshilabs-1",
         "system_user": "ethereum",
-        "version": "5.0.1",
-        "binary_url": "https://github.com/prysmaticlabs/prysm/releases/download/v5.0.1/beacon-chain-v5.0.1-linux-amd64",
+        "version": "5.3.2",
+        "binary_url": "https://github.com/prysmaticlabs/prysm/releases/download/v5.3.2/beacon-chain-v5.3.2-linux-amd64",
         "verification_type": "sha256",
-        "verification_source": "2bb8c7a26021dbc0e067e841d996fd4f6d21f633d1a9fe64bb2a73c35f222e35",
+        "verification_source": "5218357057a88758ca3ff2359bd44956d010b56bc4852a66ddfe9560f1505110",
         "extract_command": "mv ${ARCHIVE} backend/beacon-chain && chmod +x backend/beacon-chain && echo",
         "exclude_files": [],
         "exec_command_template": "/bin/sh -c '{{.Env.BackendInstallPath}}/{{.Coin.Alias}}/beacon-chain --sepolia --accept-terms-of-use --execution-endpoint=http://localhost:{{.Ports.BackendAuthRpc}} --grpc-gateway-port=17576 --rpc-port=17577 --monitoring-port=17578 --p2p-tcp-port=13576 --p2p-udp-port=12576 --datadir={{.Env.BackendDataPath}}/{{.Coin.Alias}}/backend --jwt-secret={{.Env.BackendDataPath}}/ethereum_testnet_sepolia/backend/erigon/jwt.hex --genesis-state={{.Env.BackendDataPath}}/{{.Coin.Alias}}/backend/genesis.ssz 2>>{{.Env.BackendDataPath}}/{{.Coin.Alias}}/backend/{{.Coin.Alias}}.log'",
         "logrotate_files_template": "{{.Env.BackendDataPath}}/{{.Coin.Alias}}/backend/{{.Coin.Alias}}.log",
-        "postinst_script_template": "wget https://github.com/eth-clients/merge-testnets/raw/302fe27afdc7a9d15b1766a0c0a9d64319140255/sepolia/genesis.ssz -O {{.Env.BackendDataPath}}/{{.Coin.Alias}}/backend/genesis.ssz",
+        "postinst_script_template": "wget https://github.com/eth-clients/holesky/raw/main/metadata/genesis.ssz -O {{.Env.BackendDataPath}}/{{.Coin.Alias}}/backend/genesis.ssz",
         "service_type": "simple",
         "service_additional_params_template": "",
         "protect_memory": true,
@@ -40,8 +40,8 @@
         "client_config_file": "",
         "platforms": {
             "arm64": {
-                "binary_url": "https://github.com/prysmaticlabs/prysm/releases/download/v5.0.1/beacon-chain-v5.0.1-linux-arm64",
-                "verification_source": "e970f997c4caf645b310ad839f0f00748f23fb5a522de340bad80a47271b6710"
+                "binary_url": "https://github.com/prysmaticlabs/prysm/releases/download/v5.3.2/beacon-chain-v5.3.2-linux-arm64",
+                "verification_source": "5393746e3fdf71521967ff937e8aad789dd238ab526d5eddc802e617a1fd551c"
             }
         }
     },

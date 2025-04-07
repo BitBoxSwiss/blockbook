@@ -11,9 +11,13 @@ import (
 	"github.com/trezor/blockbook/bchain"
 )
 
-func (b *EthereumRPC) initStakingPools(coinShortcut string) error {
+func (b *EthereumRPC) initStakingPools() error {
+	network := b.ChainConfig.Network
+	if network == "" {
+		network = b.ChainConfig.CoinShortcut
+	}
 	// for now only single staking pool
-	envVar := strings.ToUpper(coinShortcut) + "_STAKING_POOL_CONTRACT"
+	envVar := strings.ToUpper(network) + "_STAKING_POOL_CONTRACT"
 	envValue := os.Getenv(envVar)
 	if envValue != "" {
 		parts := strings.Split(envValue, "/")
@@ -61,7 +65,7 @@ func isZeroBigInt(b *big.Int) bool {
 
 func (b *EthereumRPC) everstakeBalanceTypeContractCall(signature, addr, contract string) (string, error) {
 	req := signature + "0000000000000000000000000000000000000000000000000000000000000000"[len(addr):] + addr
-	return b.ethCall(req, contract)
+	return b.EthereumTypeRpcCall(req, contract, "")
 }
 
 func (b *EthereumRPC) everstakeContractCallSimpleNumeric(signature, addr, contract string) (*big.Int, error) {

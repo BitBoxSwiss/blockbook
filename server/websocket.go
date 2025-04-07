@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"math/big"
 	"net/http"
+	"os"
 	"runtime/debug"
 	"strconv"
 	"strings"
@@ -70,6 +71,7 @@ type WebsocketServer struct {
 	fiatRatesSubscriptions          map[string]map[*websocketChannel]string
 	fiatRatesTokenSubscriptions     map[*websocketChannel][]string
 	fiatRatesSubscriptionsLock      sync.Mutex
+	allowedRpcCallTo                map[string]struct{}
 }
 
 // NewWebsocketServer creates new websocket interface to blockbook and returns its handle
@@ -104,6 +106,14 @@ func NewWebsocketServer(db *db.RocksDB, chain bchain.BlockChain, mempool bchain.
 		addressSubscriptions:        make(map[string]map[*websocketChannel]string),
 		fiatRatesSubscriptions:      make(map[string]map[*websocketChannel]string),
 		fiatRatesTokenSubscriptions: make(map[*websocketChannel][]string),
+	}
+	envRpcCall := os.Getenv(strings.ToUpper(is.GetNetwork()) + "_ALLOWED_RPC_CALL_TO")
+	if envRpcCall != "" {
+		s.allowedRpcCallTo = make(map[string]struct{})
+		for _, c := range strings.Split(envRpcCall, ",") {
+			s.allowedRpcCallTo[strings.ToLower(c)] = struct{}{}
+		}
+		glog.Info("Support of rpcCall for these contracts: ", envRpcCall)
 	}
 	return s, nil
 }
@@ -277,8 +287,8 @@ var requestHandlers = map[string]func(*WebsocketServer, *websocketChannel, *WsRe
 				c.getAddressInfoDescriptorsMux.Unlock()
 				if l > s.is.WsGetAccountInfoLimit {
 					if s.closeChannel(c) {
-					glog.Info("Client ", c.id, " exceeded getAddressInfo limit, ", c.ip)
-					s.is.AddWsLimitExceedingIP(c.ip)
+						glog.Info("Client ", c.id, " exceeded getAddressInfo limit, ", c.ip)
+						s.is.AddWsLimitExceedingIP(c.ip)
 					}
 					return
 				}
@@ -357,7 +367,7 @@ var requestHandlers = map[string]func(*WebsocketServer, *websocketChannel, *WsRe
 		return
 	},
 	"estimateFee": func(s *WebsocketServer, c *websocketChannel, req *WsReq) (rv interface{}, err error) {
-		return s.estimateFee(c, req.Params)
+		return s.estimateFee(req.Params)
 	},
 	"sendTransaction": func(s *WebsocketServer, c *websocketChannel, req *WsReq) (rv interface{}, err error) {
 		r := WsSendTransactionReq{}
@@ -388,6 +398,14 @@ var requestHandlers = map[string]func(*WebsocketServer, *websocketChannel, *WsRe
 		err = json.Unmarshal(req.Params, &r)
 		if err == nil {
 			rv, err = s.getBlockFiltersBatch(&r)
+		}
+		return
+	},
+	"rpcCall": func(s *WebsocketServer, c *websocketChannel, req *WsReq) (rv interface{}, err error) {
+		r := WsRpcCallReq{}
+		err = json.Unmarshal(req.Params, &r)
+		if err == nil {
+			rv, err = s.rpcCall(&r)
 		}
 		return
 	},
@@ -580,6 +598,7 @@ func (s *WebsocketServer) getInfo() (*WsInfoRes, error) {
 	return &WsInfoRes{
 		Name:       s.is.Coin,
 		Shortcut:   s.is.CoinShortcut,
+		Network:    s.is.GetNetwork(),
 		Decimals:   s.chainParser.AmountDecimals(),
 		BestHeight: int(height),
 		BestHash:   hash,
@@ -613,7 +632,30 @@ func (s *WebsocketServer) getBlock(id string, page, pageSize int) (interface{}, 
 	return block, nil
 }
 
-func (s *WebsocketServer) estimateFee(c *websocketChannel, params []byte) (interface{}, error) {
+func eip1559FeesToApi(fee *bchain.Eip1559Fee) *api.Eip1559Fee {
+	if fee == nil {
+		return nil
+	}
+	apiFee := api.Eip1559Fee{}
+	apiFee.MaxFeePerGas = (*api.Amount)(fee.MaxFeePerGas)
+	apiFee.MaxPriorityFeePerGas = (*api.Amount)(fee.MaxPriorityFeePerGas)
+	apiFee.MaxWaitTimeEstimate = fee.MaxWaitTimeEstimate
+	apiFee.MinWaitTimeEstimate = fee.MinWaitTimeEstimate
+	return &apiFee
+}
+
+func eip1559FeeRangeToApi(feeRange []*big.Int) []*api.Amount {
+	if feeRange == nil {
+		return nil
+	}
+	apiFeeRange := make([]*api.Amount, len(feeRange))
+	for i := range feeRange {
+		apiFeeRange[i] = (*api.Amount)(feeRange[i])
+	}
+	return apiFeeRange
+}
+
+func (s *WebsocketServer) estimateFee(params []byte) (interface{}, error) {
 	var r WsEstimateFeeReq
 	err := json.Unmarshal(params, &r)
 	if err != nil {
@@ -634,11 +676,32 @@ func (s *WebsocketServer) estimateFee(c *websocketChannel, params []byte) (inter
 		if err != nil {
 			return nil, err
 		}
+		feePerTx := new(big.Int)
+		feePerTx.Mul(&fee, new(big.Int).SetUint64(gas))
+		eip1559, err := s.chain.EthereumTypeGetEip1559Fees()
+		if err != nil {
+			return nil, err
+		}
+		var eip1559Api *api.Eip1559Fees
+		if eip1559 != nil {
+			eip1559Api = &api.Eip1559Fees{}
+			eip1559Api.BaseFeePerGas = (*api.Amount)(eip1559.BaseFeePerGas)
+			eip1559Api.Instant = eip1559FeesToApi(eip1559.Instant)
+			eip1559Api.High = eip1559FeesToApi(eip1559.High)
+			eip1559Api.Medium = eip1559FeesToApi(eip1559.Medium)
+			eip1559Api.Low = eip1559FeesToApi(eip1559.Low)
+			eip1559Api.NetworkCongestion = eip1559.NetworkCongestion
+			eip1559Api.BaseFeeTrend = eip1559.BaseFeeTrend
+			eip1559Api.PriorityFeeTrend = eip1559.PriorityFeeTrend
+			eip1559Api.LatestPriorityFeeRange = eip1559FeeRangeToApi(eip1559.LatestPriorityFeeRange)
+			eip1559Api.HistoricalBaseFeeRange = eip1559FeeRangeToApi(eip1559.HistoricalBaseFeeRange)
+			eip1559Api.HistoricalPriorityFeeRange = eip1559FeeRangeToApi(eip1559.HistoricalPriorityFeeRange)
+		}
 		for i := range r.Blocks {
 			res[i].FeePerUnit = fee.String()
 			res[i].FeeLimit = sg
-			fee.Mul(&fee, new(big.Int).SetUint64(gas))
-			res[i].FeePerTx = fee.String()
+			res[i].FeePerTx = feePerTx.String()
+			res[i].Eip1559 = eip1559Api
 		}
 	} else {
 		conservative := true
@@ -744,6 +807,20 @@ func (s *WebsocketServer) getBlockFiltersBatch(r *WsBlockFiltersBatchReq) (res i
 		ZeroedKey:         s.is.BlockFilterUseZeroedKey,
 		BlockFiltersBatch: blockFiltersBatch,
 	}, nil
+}
+
+func (s *WebsocketServer) rpcCall(r *WsRpcCallReq) (*WsRpcCallRes, error) {
+	if s.allowedRpcCallTo != nil {
+		_, ok := s.allowedRpcCallTo[strings.ToLower(r.To)]
+		if !ok {
+			return nil, errors.New("Not supported")
+		}
+	}
+	data, err := s.chain.EthereumTypeRpcCall(r.Data, r.To, r.From)
+	if err != nil {
+		return nil, err
+	}
+	return &WsRpcCallRes{Data: data}, nil
 }
 
 type subscriptionResponse struct {

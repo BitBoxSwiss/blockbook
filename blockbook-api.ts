@@ -33,6 +33,10 @@ export interface EthereumSpecific {
     gasLimit: number;
     gasUsed?: number;
     gasPrice?: string;
+    l1Fee?: number;
+    l1FeeScalar?: string;
+    l1GasPrice?: string;
+    l1GasUsed?: number;
     data?: string;
     parsedData?: EthereumParsedInputData;
     internalTransfers?: EthereumInternalTransfer[];
@@ -42,12 +46,14 @@ export interface MultiTokenValue {
     value?: string;
 }
 export interface TokenTransfer {
-    type: string;
+    /** @deprecated: Use standard instead. */
+    type: '' | 'XPUBAddress' | 'ERC20' | 'ERC721' | 'ERC1155' | 'BEP20' | 'BEP721' | 'BEP1155';
+    standard: '' | 'XPUBAddress' | 'ERC20' | 'ERC721' | 'ERC1155' | 'BEP20' | 'BEP721' | 'BEP1155';
     from: string;
     to: string;
     contract: string;
-    name: string;
-    symbol: string;
+    name?: string;
+    symbol?: string;
     decimals: number;
     value?: string;
     multiTokenValues?: MultiTokenValue[];
@@ -111,6 +117,7 @@ export interface FeeStats {
 }
 export interface StakingPool {
     contract: string;
+    name: string;
     pendingBalance: string;
     pendingDepositedBalance: string;
     depositedBalance: string;
@@ -120,7 +127,9 @@ export interface StakingPool {
     autocompoundBalance: string;
 }
 export interface ContractInfo {
-    type: string;
+    /** @deprecated: Use standard instead. */
+    type: '' | 'XPUBAddress' | 'ERC20' | 'ERC721' | 'ERC1155' | 'BEP20' | 'BEP721' | 'BEP1155';
+    standard: '' | 'XPUBAddress' | 'ERC20' | 'ERC721' | 'ERC1155' | 'BEP20' | 'BEP721' | 'BEP1155';
     contract: string;
     name: string;
     symbol: string;
@@ -129,13 +138,15 @@ export interface ContractInfo {
     destructedInBlock?: number;
 }
 export interface Token {
-    type: 'XPUBAddress' | 'ERC20' | 'ERC721' | 'ERC1155';
+    /** @deprecated: Use standard instead. */
+    type: '' | 'XPUBAddress' | 'ERC20' | 'ERC721' | 'ERC1155' | 'BEP20' | 'BEP721' | 'BEP1155';
+    standard: '' | 'XPUBAddress' | 'ERC20' | 'ERC721' | 'ERC1155' | 'BEP20' | 'BEP721' | 'BEP1155';
     name: string;
     path?: string;
     contract?: string;
     transfers: number;
     symbol?: string;
-    decimals?: number;
+    decimals: number;
     balance?: string;
     baseValue?: number;
     secondaryValue?: number;
@@ -169,6 +180,7 @@ export interface Address {
     totalBaseValue?: number;
     totalSecondaryValue?: number;
     contractInfo?: ContractInfo;
+    /** @deprecated: replaced by contractInfo */
     erc20Contract?: ContractInfo;
     addressAliases?: { [key: string]: AddressAlias };
     stakingPools?: StakingPool[];
@@ -256,6 +268,7 @@ export interface InternalStateColumn {
 }
 export interface BlockbookInfo {
     coin: string;
+    network: string;
     host: string;
     version: string;
     gitCommit: string;
@@ -275,7 +288,7 @@ export interface BlockbookInfo {
     currentFiatRatesTime?: string;
     historicalFiatRatesTime?: string;
     historicalTokenFiatRatesTime?: string;
-    stakingPoolContracts?: string[];
+    supportedStakingPools?: string[];
     dbSizeFromColumns?: number;
     dbColumns?: InternalStateColumn[];
     about: string;
@@ -350,6 +363,7 @@ export interface WsBackendInfo {
 export interface WsInfoRes {
     name: string;
     shortcut: string;
+    network: string;
     decimals: number;
     version: string;
     bestHeight: number;
@@ -408,10 +422,30 @@ export interface WsEstimateFeeReq {
         value?: string;
     };
 }
+export interface Eip1559Fee {
+    maxFeePerGas: string;
+    maxPriorityFeePerGas: string;
+    minWaitTimeEstimate?: number;
+    maxWaitTimeEstimate?: number;
+}
+export interface Eip1559Fees {
+    baseFeePerGas?: string;
+    low?: Eip1559Fee;
+    medium?: Eip1559Fee;
+    high?: Eip1559Fee;
+    instant?: Eip1559Fee;
+    networkCongestion?: number;
+    latestPriorityFeeRange?: string[];
+    historicalPriorityFeeRange?: string[];
+    historicalBaseFeeRange?: string[];
+    priorityFeeTrend?: 'up' | 'down';
+    baseFeeTrend?: 'up' | 'down';
+}
 export interface WsEstimateFeeRes {
     feePerTx?: string;
     feePerUnit?: string;
     feeLimit?: string;
+    eip1559?: Eip1559Fees;
 }
 export interface WsSendTransactionReq {
     hex: string;
@@ -440,6 +474,14 @@ export interface WsMempoolFiltersReq {
     scriptType: string;
     fromTimestamp: number;
     M?: number;
+}
+export interface WsRpcCallReq {
+    from?: string;
+    to: string;
+    data: string;
+}
+export interface WsRpcCallRes {
+    data: string;
 }
 export interface MempoolTxidFilterEntries {
     entries?: { [key: string]: string };
