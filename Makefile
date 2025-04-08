@@ -1,7 +1,8 @@
 BIN_IMAGE = blockbook-build
 DEB_IMAGE = blockbook-build-deb
 PACKAGER = $(shell id -u):$(shell id -g)
-DOCKER_VERSION = $(shell docker version --format '{{.Client.Version}}')
+#DOCKER_VERSION = $(shell docker version --format '{{.Client.Version}}')
+DOCKER_VERSION = $(shell docker version --format '{{.Client.Version}}' | cut -d'+' -f1)
 BASE_IMAGE = $$(awk -F= '$$1=="ID" { print $$2 ;}' /etc/os-release):$$(awk -F= '$$1=="VERSION_ID" { print $$2 ;}' /etc/os-release | tr -d '"')
 NO_CACHE = false
 TCMALLOC =
