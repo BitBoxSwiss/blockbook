@@ -64,7 +64,7 @@ Response (`SystemInfo` type):
     "hasFiatRates": true,
     "currentFiatRatesTime": "2024-09-10T08:42:00.898792419Z",
     "historicalFiatRatesTime": "2024-09-10T00:00:00Z",
-    "about": "Blockbook - blockchain indexer for Trezor Suite https://trezor.io/trezor-suite. Do not use for any other purpose."
+    "about": "Blockbook - blockchain indexer. This instance serves the BitBoxApp wallet. Do not use for any other purpose."
   },
   "backend": {
     "chain": "main",
